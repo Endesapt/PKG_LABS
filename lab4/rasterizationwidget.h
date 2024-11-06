@@ -1,32 +1,70 @@
 #ifndef RASTERIZATIONWIDGET_H
 #define RASTERIZATIONWIDGET_H
 
+#include <QApplication>
 #include <QWidget>
 #include <QPainter>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QButtonGroup>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class RasterizationWidget;
-}
-QT_END_NAMESPACE
-
+enum Algorithm { None, StepByStep, DDA, BresenhamLine, BresenhamCircle };
 class RasterizationWidget : public QWidget {
+    Q_OBJECT
+
 public:
-    RasterizationWidget(QWidget *parent = nullptr) : QWidget(parent) {
-        setMinimumSize(800, 600);
+    RasterizationWidget(QWidget *parent = nullptr) : QWidget(parent), currentAlgorithm(None) {
+        setMinimumSize(800, 800);
+    }
+
+    void setParameters(int x1, int y1, int x2, int y2, int r = 0, Algorithm algo = None) {
+        this->x1 = x1;
+        this->y1 = y1;
+        this->x2 = x2;
+        this->y2 = y2;
+        this->radius = r;
+        this->currentAlgorithm = algo;
+        update();
     }
 
 protected:
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
+        drawGrid(painter);
 
-        // Пример вызова всех алгоритмов
-        drawStepByStep(painter, 50, 50, 200, 200);
-        drawDDA(painter, 250, 50, 400, 200);
-        drawBresenhamLine(painter, 450, 50, 600, 200);
-        drawBresenhamCircle(painter, 700, 150, 150);
+        switch (currentAlgorithm) {
+        case StepByStep:
+            drawStepByStep(painter, x1, y1, x2, y2);
+            break;
+        case DDA:
+            drawDDA(painter, x1, y1, x2, y2);
+            break;
+        case BresenhamLine:
+            drawBresenhamLine(painter, x1, y1, x2, y2);
+            break;
+        case BresenhamCircle:
+            drawBresenhamCircle(painter, x1, y1, radius);
+            break;
+        default:
+            break;
+        }
+    }
+
+private:
+    Algorithm  currentAlgorithm;
+    int x1, y1, x2, y2, radius;
+    const int gridSize = 30;
+
+    void drawGrid(QPainter &painter) {
+        painter.setPen(Qt::lightGray);
+        int step = width() / gridSize;
+        for (int i = 0; i <= gridSize; ++i) {
+            painter.drawLine(i * step, 0, i * step, height());
+            painter.drawLine(0, i * step, width(), i * step);
+        }
     }
 
     void drawStepByStep(QPainter &painter, int x1, int y1, int x2, int y2) {
@@ -39,20 +77,25 @@ protected:
         float x = x1;
         float y = y1;
         for (int i = 0; i <= steps; ++i) {
-            painter.drawPoint(round(x), round(y));
+            painter.drawEllipse(QPoint(round(x) * width() / gridSize, round(y) * height() / gridSize), 2, 2);
             x += xInc;
             y += yInc;
         }
     }
 
-    void drawDDA(QPainter &painter, int x1, double y1, int x2, double y2) {
+    void drawDDA(QPainter &painter, int x1, int y1, int x2, int y2) {
         painter.setPen(Qt::green);
-        double Dx=x2-x1,Dy=y2-y1;
-        painter.drawPoint(x1,y1);
-        while(x1<x2){
-            x1=x1+1;
-            y1=y1+Dy/Dx;
-            painter.drawPoint(x1,y1);
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int steps = std::max(abs(dx), abs(dy));
+        float xInc = dx / (float)steps;
+        float yInc = dy / (float)steps;
+        float x = x1;
+        float y = y1;
+        for (int i = 0; i <= steps; ++i) {
+            painter.drawEllipse(QPoint(round(x) * width() / gridSize, round(y) * height() / gridSize), 2, 2);
+            x += xInc;
+            y += yInc;
         }
     }
 
@@ -63,7 +106,7 @@ protected:
         int err = (dx > dy ? dx : -dy) / 2, e2;
 
         while (true) {
-            painter.drawPoint(x1, y1);
+            painter.drawEllipse(QPoint(x1 * width() / gridSize, y1 * height() / gridSize), 2, 2);
             if (x1 == x2 && y1 == y2) break;
             e2 = err;
             if (e2 > -dx) { err -= dy; x1 += sx; }
@@ -89,14 +132,17 @@ protected:
     }
 
     void drawCirclePoints(QPainter &painter, int xc, int yc, int x, int y) {
-        painter.drawPoint(xc + x, yc + y);
-        painter.drawPoint(xc - x, yc + y);
-        painter.drawPoint(xc + x, yc - y);
-        painter.drawPoint(xc - x, yc - y);
-        painter.drawPoint(xc + y, yc + x);
-        painter.drawPoint(xc - y, yc + x);
-        painter.drawPoint(xc + y, yc - x);
-        painter.drawPoint(xc - y, yc - x);
+        int step = width() / gridSize;
+        painter.drawEllipse(QPoint((xc + x) * step, (yc + y) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc - x) * step, (yc + y) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc + x) * step, (yc - y) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc - x) * step, (yc - y) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc + y) * step, (yc + x) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc - y) * step, (yc + x) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc + y) * step, (yc - x) * step), 2, 2);
+        painter.drawEllipse(QPoint((xc - y) * step, (yc - x) * step), 2, 2);
     }
 };
+
+
 #endif // RASTERIZATIONWIDGET_H

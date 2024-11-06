@@ -39,7 +39,10 @@ protected:
         }
 
         // Отсекаем и рисуем видимые части
-        painter.setPen(Qt::green);
+        QPen greenPen(QColor(0, 255, 0), 2);
+
+        // Set the pen to the painter
+        painter.setPen(greenPen);
         for (const auto &line : lines) {
             Line clippedLine;
             if (cohenSutherlandClip(line, clippedLine)) {

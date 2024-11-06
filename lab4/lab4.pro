@@ -12,6 +12,7 @@ SOURCES += \
     main.cpp
 
 HEADERS += \
+    mainwindow.h \
     rasterizationwidget.h
 
 FORMS +=
