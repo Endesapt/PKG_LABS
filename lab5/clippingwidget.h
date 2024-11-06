@@ -7,8 +7,9 @@
 #include <QFile>
 #include <QTextStream>
 
+
 struct Line {
-    QPoint p1, p2;
+    QPointF p1, p2;
 };
 
 enum OutCode {
@@ -21,37 +22,49 @@ enum OutCode {
 
 class ClippingWidget : public QWidget {
     QVector<Line> lines;
-    QRect clipRect;
+    QRectF clipRect;
 
 protected:
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
 
+        // Рисуем координатную сетку
+        int gridSize = 20; // Размер ячейки сетки
+        painter.setPen(QColor(220, 220, 220));
+        for (int x = 0; x < width(); x += gridSize) {
+            painter.drawLine(x, 0, x, height());
+        }
+        for (int y = 0; y < height(); y += gridSize) {
+            painter.drawLine(0, y, width(), y);
+        }
 
         // Рисуем отсекающее окно
         painter.setPen(Qt::red);
-        painter.drawRect(clipRect);
+        QRectF scaledClipRect(clipRect.topLeft() * gridSize, clipRect.bottomRight() * gridSize);
+        painter.drawRect(scaledClipRect);
 
         // Рисуем исходные отрезки
         painter.setPen(Qt::blue);
         for (const auto &line : lines) {
-            painter.drawLine(line.p1, line.p2);
+            QPointF p1 = line.p1 * gridSize;
+            QPointF p2 = line.p2 * gridSize;
+            painter.drawLine(p1, p2);
         }
 
         // Отсекаем и рисуем видимые части
-        QPen greenPen(QColor(0, 255, 0), 2);
-
-        // Set the pen to the painter
-        painter.setPen(greenPen);
+        painter.setPen(Qt::green);
         for (const auto &line : lines) {
             Line clippedLine;
             if (cohenSutherlandClip(line, clippedLine)) {
-                painter.drawLine(clippedLine.p1, clippedLine.p2);
+                QPointF p1 = clippedLine.p1 * gridSize;
+                QPointF p2 = clippedLine.p2 * gridSize;
+                painter.drawLine(p1, p2);
             }
         }
     }
 
-    int computeOutCode(int x, int y) {
+    int computeOutCode(float x, float y) {
         int code = OutCode::INSIDE;
         if (x < clipRect.left()) code |= OutCode::LEFT;
         else if (x > clipRect.right()) code |= OutCode::RIGHT;
@@ -61,10 +74,10 @@ protected:
     }
 
     bool cohenSutherlandClip(const Line &line, Line &clippedLine) {
-        int x0 = line.p1.x();
-        int y0 = line.p1.y();
-        int x1 = line.p2.x();
-        int y1 = line.p2.y();
+        float x0 = line.p1.x();
+        float y0 = line.p1.y();
+        float x1 = line.p2.x();
+        float y1 = line.p2.y();
 
         int outcode0 = computeOutCode(x0, y0);
         int outcode1 = computeOutCode(x1, y1);
@@ -78,7 +91,7 @@ protected:
             } else if (outcode0 & outcode1) {
                 break;
             } else {
-                int x, y;
+                float x, y;
                 int outcodeOut = outcode0 ? outcode0 : outcode1;
 
                 if (outcodeOut & OutCode::TOP) {
@@ -108,8 +121,8 @@ protected:
         }
 
         if (accept) {
-            clippedLine.p1 = QPoint(x0, y0);
-            clippedLine.p2 = QPoint(x1, y1);
+            clippedLine.p1 = QPointF(x0, y0);
+            clippedLine.p2 = QPointF(x1, y1);
             return true;
         }
         return false;
@@ -131,14 +144,14 @@ public:
         int n;
         in >> n;
         for (int i = 0; i < n; ++i) {
-            int x1, y1, x2, y2;
+            float x1, y1, x2, y2;
             in >> x1 >> y1 >> x2 >> y2;
-            lines.append({QPoint(x1, y1), QPoint(x2, y2)});
+            lines.append({QPointF(x1, y1), QPointF(x2, y2)});
         }
 
-        int xmin, ymin, xmax, ymax;
+        float xmin, ymin, xmax, ymax;
         in >> xmin >> ymin >> xmax >> ymax;
-        clipRect = QRect(QPoint(xmin, ymin), QPoint(xmax, ymax));
+        clipRect = QRectF(QPointF(xmin, ymin), QPointF(xmax, ymax));
 
         file.close();
     }
