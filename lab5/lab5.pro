@@ -12,7 +12,8 @@ SOURCES += \
     main.cpp
 
 HEADERS += \
-    clippingwidget.h
+    clippingwidget.h \
+    polygonclippingwidget.h
 
 FORMS +=
 
