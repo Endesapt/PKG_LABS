@@ -1,94 +1,52 @@
-#include <QApplication>
-#include <QWidget>
-#include <QPainter>
+// mainwindow.h
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QComboBox>
+#include <QSpinBox>
 #include <QLabel>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QPainter>
-#include <QButtonGroup>
-#include<QVBoxLayout>
-#include "rasterizationwidget.h"
-class MainWindow : public QWidget {
+#include <QColor>
+
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
-    MainWindow() {
-        auto *layout = new QVBoxLayout(this);
-
-        auto *inputLayout = new QHBoxLayout();
-        x1Edit = new QLineEdit();
-        y1Edit = new QLineEdit();
-        x2Edit = new QLineEdit();
-        y2Edit = new QLineEdit();
-        radiusEdit = new QLineEdit();
-
-        inputLayout->addWidget(new QLabel("X1:"));
-        inputLayout->addWidget(x1Edit);
-        inputLayout->addWidget(new QLabel("Y1:"));
-        inputLayout->addWidget(y1Edit);
-        inputLayout->addWidget(new QLabel("X2:"));
-        inputLayout->addWidget(x2Edit);
-        inputLayout->addWidget(new QLabel("Y2:"));
-        inputLayout->addWidget(y2Edit);
-        inputLayout->addWidget(new QLabel("Radius:"));
-        inputLayout->addWidget(radiusEdit);
-
-        auto *buttonLayout = new QHBoxLayout();
-        auto *buttonGroup = new QButtonGroup(this);
-
-        auto *stepButton = new QPushButton("Step by Step");
-        auto *ddaButton = new QPushButton("DDA");
-        auto *bresenhamLineButton = new QPushButton("Bresenham Line");
-        auto *bresenhamCircleButton = new QPushButton("Bresenham Circle");
-
-        buttonGroup->addButton(stepButton);
-        buttonGroup->addButton(ddaButton);
-        buttonGroup->addButton(bresenhamLineButton);
-        buttonGroup->addButton(bresenhamCircleButton);
-
-        buttonLayout->addWidget(stepButton);
-        buttonLayout->addWidget(ddaButton);
-        buttonLayout->addWidget(bresenhamLineButton);
-        buttonLayout->addWidget(bresenhamCircleButton);
-
-        rasterWidget = new RasterizationWidget;
-
-        layout->addLayout(inputLayout);
-        layout->addLayout(buttonLayout);
-        layout->addWidget(rasterWidget);
-
-        connect(stepButton, &QPushButton::clicked, this, &MainWindow::drawStepByStep);
-        connect(ddaButton, &QPushButton::clicked, this, &MainWindow::drawDDA);
-        connect(bresenhamLineButton, &QPushButton::clicked, this, &MainWindow::drawBresenhamLine);
-        connect(bresenhamCircleButton, &QPushButton::clicked, this, &MainWindow::drawBresenhamCircle);
-    }
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 
 private slots:
-    void drawStepByStep() {
-        rasterWidget->setParameters(getX1(), getY1(), getX2(), getY2(), 0, Algorithm::StepByStep);
-    }
-
-    void drawDDA() {
-        rasterWidget->setParameters(getX1(), getY1(), getX2(), getY2(), 0, Algorithm::DDA);
-    }
-
-    void drawBresenhamLine() {
-        rasterWidget->setParameters(getX1(), getY1(), getX2(), getY2(), 0, Algorithm::BresenhamLine);
-    }
-
-    void drawBresenhamCircle() {
-        rasterWidget->setParameters(getX1(), getY1(), 0, 0, getRadius(), Algorithm::BresenhamCircle);
-    }
+    void drawLine();
+    void clearScene();
 
 private:
-    QLineEdit *x1Edit, *y1Edit, *x2Edit, *y2Edit, *radiusEdit;
-    RasterizationWidget *rasterWidget;
+    void setupUI();
+    void stepByStepLine(int x1, int y1, int x2, int y2);
+    void DDALine(int x1, int y1, int x2, int y2);
+    void bresenhamLine(int x1, int y1, int x2, int y2);
+    void bresenhamCircle(int xc, int yc, int radius);
+    void putPixel(int x, int y, const QColor& color);
+    void drawGridNumbers();
+    QColor getCurrentAlgorithmColor();
 
-    int getX1() const { return x1Edit->text().toInt(); }
-    int getY1() const { return y1Edit->text().toInt(); }
-    int getX2() const { return x2Edit->text().toInt(); }
-    int getY2() const { return y2Edit->text().toInt(); }
-    int getRadius() const { return radiusEdit->text().toInt(); }
+    QGraphicsScene *scene;
+    QGraphicsView *view;
+    QComboBox *algorithmSelect;
+    QSpinBox *x1Spin, *y1Spin, *x2Spin, *y2Spin, *radiusSpin;
+    QPushButton *drawButton, *clearButton;
+    int gridSize;
+
+    // Цвета для разных алгоритмов
+    const QColor STEP_BY_STEP_COLOR = QColor(255, 0, 0);    // Красный
+    const QColor DDA_COLOR = QColor(0, 255, 0);             // Зеленый
+    const QColor BRESENHAM_LINE_COLOR = QColor(0, 0, 255);  // Синий
+    const QColor BRESENHAM_CIRCLE_COLOR = QColor(128, 0, 128); // Фиолетовый
 };
+
+#endif
